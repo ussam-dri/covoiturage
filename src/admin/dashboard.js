@@ -12,6 +12,7 @@ import {
   TrashIcon,UserCircleIcon
 } from '@heroicons/react/24/outline';
 import { updateUser, deleteUser } from '../redux/userSlice';
+import { Header } from '../utils/Header';
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('members');
@@ -44,22 +45,17 @@ function AdminDashboard() {
   return (
     <div className="min-h-screen bg-white">
       {/* Top navigation */}
-      <div className="border-b border-gray-200 py-4 px-6 flex justify-between items-center">
-        <div className="flex items-center">
-          <div className="text-xl font-semibold mr-2">🏪</div>
-          <div className="text-xl font-semibold">ShoppeLux Portail</div>
+      {/* <nav className="flex justify-between items-center p-4 border-b">
+        <div className="flex items-center space-x-4">
+          <img src="/images/logo.png" alt="ChutChutCar Logo" className="h-10" />
+          <div className="space-x-4 font-myFont">
+            <a href="/" className="text-blue-600">coDrive</a>
+            <a href="#" className="text-gray-600">Trajets</a>
+            <a href="#" className="text-gray-600">Terms of Use</a>
+          </div>
         </div>
-        <div className="flex items-center space-x-6">
-          <a href="#" className="text-gray-600 hover:text-gray-900">Home</a>
-          <a href="#" className="text-gray-600 hover:text-gray-900">About Program</a>
-          <a href="#" className="text-gray-600 hover:text-gray-900">Contact Us</a>
-          <a href="#" className="text-gray-600 hover:text-gray-900">Privacy Policy</a>
-          <a href="#" className="text-gray-600 hover:text-gray-900">Support</a>
-          <div className="text-xl">🔔</div>
-          <div className="text-xl">→</div>
-        </div>
-      </div>
-
+      </nav> */}
+  <Header></Header>
       <div className="flex">
         {/* Sidebar */}
         <div className="w-64 border-r border-gray-200 min-h-screen">
@@ -139,16 +135,16 @@ function AdminDashboard() {
                     All
                   </button>
                   <button 
-                    onClick={() => setFilterType('manager')}
-                    className={`px-4 py-2 rounded-md ${filterType === 'manager' ? 'bg-gray-200' : 'bg-gray-100'}`}
+                    onClick={() => setFilterType('driver')}
+                    className={`px-4 py-2 rounded-md ${filterType === 'driver' ? 'bg-gray-200' : 'bg-gray-100'}`}
                   >
-                    manager
+                    driver
                   </button>
                   <button 
-                    onClick={() => setFilterType('seller')}
-                    className={`px-4 py-2 rounded-md ${filterType === 'seller' ? 'bg-gray-200' : 'bg-gray-100'}`}
+                    onClick={() => setFilterType('passenger')}
+                    className={`px-4 py-2 rounded-md ${filterType === 'passenger' ? 'bg-gray-200' : 'bg-gray-100'}`}
                   >
-                    seller
+                    passenger
                   </button>
                 </div>
                 

@@ -4,11 +4,12 @@ import Footer from "./utils/Footer";
 import FeaturesSection from "./utils/features";
 import StatisticsCounter from "./utils/rides_counter";
 import { Header } from "./utils/Header";
-
+import useLogout from './utils/logout';
+import SearchTrip from "./utils/searchTrip";
+import HowItWorks from "./utils/howItWorks";
 const Homepage = () => {
-
     const [count, setCount] = useState(0);
-  
+   
     const increment = () => setCount(count + 1);
     const decrement = () => setCount(count > 0 ? count - 1 : 0);
 
@@ -26,7 +27,7 @@ const Homepage = () => {
     if (query.length < 2) return; // Prevent unnecessary API calls for short queries
 
     try {
-      const response = await fetch(`http://localhost:5000/autocomplete?query=${query}`);
+      const response = await fetch(`http://localhost:5090/autocomplete?query=${query}`);
       const data = await response.json();
       if (type === "departure") {
         setDepartureSuggestions(data);
@@ -97,22 +98,22 @@ const Homepage = () => {
     // If current destination equals the new departure, clear destination
     if (destination === city) {
       setDestination("");
-      setDestinationError("La destination ne peut pas être identique au départ");
+      setDestinationError("Please enter a departure city");
     }
   };
 
   // Handle search button click
   const handleSearch = () => {
     if (!departure.trim()) {
-      setDepartureError("Veuillez saisir une ville de départ");
+      setDepartureError("Please enter a destination city");
       return;
     }
     
     if (!destination.trim()) {
-      setDestinationError("Veuillez saisir une ville de destination");
+      setDestinationError("Destination cannot be the same as the departure");
       return;
     }
-    
+    //
     // If all validations pass, proceed with search
     console.log("Searching for rides:", { departure, destination, date: selectedDate, passengers });
     // Implement search functionality here
@@ -121,7 +122,7 @@ const Homepage = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
-    <Header></Header>
+    <Header ></Header>
 
       {/* Hero Section */}
       <div
@@ -133,112 +134,18 @@ const Homepage = () => {
         </div>
         <div className="z-10 text-center text-white">
           <h1 className="text-4xl text-black font-bold mb-4 font-myFont2">
-            Vous avez vos plans, on a vos bons plans.
-          </h1>
+          You’ve got plans, we’ve got the perfect ride.          </h1>
 
           {/* Search Box */}
-          <div className="w-full bg-white rounded-lg p-6 shadow-lg font-myFont2">
-            <div className="grid grid-cols-4 gap-4">
-              {/* Departure Input */}
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Départ"
-                  value={departure}
-                  onChange={handleDepartureChange}
-                  className={`w-full p-3 border rounded pl-10 text-black ${departureError ? 'border-red-500' : ''}`}
-                />
-                <MapPin className="absolute left-3 top-4 text-gray-400" />
-                {departureError && (
-                  <p className="text-red-500 text-sm mt-1 text-left">{departureError}</p>
-                )}
-                {/* Autocomplete suggestions */}
-                {departureSuggestions.length > 0 && (
-                  <ul className="absolute left-0 w-full text-black bg-white border rounded shadow-lg z-10">
-                    {departureSuggestions.map((city, index) => (
-                      <li
-                        key={index}
-                        onClick={() => handleDepartureSelection(city)}
-                        className="p-2 hover:bg-gray-100 cursor-pointer"
-                      >
-                        {city}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              {/* Destination Input */}
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Destination"
-                  value={destination}
-                  onChange={handleDestinationChange}
-                  className={`w-full p-3 border rounded pl-10 text-black ${destinationError ? 'border-red-500' : ''}`}
-                  disabled={!departure.trim()}
-                />
-                <MapPin className="absolute left-3 top-4 text-gray-400" />
-                {destinationError && (
-                  <p className="text-red-500 text-sm mt-1 text-left">{destinationError}</p>
-                )}
-                {/* Autocomplete suggestions */}
-                {destinationSuggestions.length > 0 && (
-                  <ul className="absolute left-0 w-full text-black bg-white border rounded shadow-lg z-10">
-                    {destinationSuggestions.map((city, index) => (
-                      <li
-                        key={index}
-                        onClick={() => handleDestinationSelection(city)}
-                        className="p-2 hover:bg-gray-100 cursor-pointer"
-                      >
-                        {city}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              {/* Date Input */}
-              <div className="relative">
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full p-3 border rounded pl-10 text-black"
-                />
-                <Calendar className="absolute left-3 top-4 text-gray-400" />
-              </div>
-
-              {/* Passengers Input */}
-              <div className="relative">
-                <select
-                  className="w-full p-3 border rounded pl-10 text-black"
-                  value={passengers}
-                  onChange={(e) => setPassengers(Number(e.target.value))}
-                >
-                  {[...Array(5)].map((_, i) => (
-                    <option key={i + 1} value={i + 1}>
-                      {i + 1} passager{i > 0 ? "s" : ""}
-                    </option>
-                  ))}
-                </select>
-                <Users className="absolute left-3 top-4 text-gray-400" />
-              </div>
-            </div>
-            <button 
-              className="w-full mt-4 bg-blue-500 text-white py-3 rounded hover:bg-blue-600 transition font-myFont2"
-              onClick={handleSearch}
-            >
-              Rechercher
-            </button>
-          </div>
+       <SearchTrip></SearchTrip>
           
         </div>
         
       </div>
+      <StatisticsCounter></StatisticsCounter>
+
       <FeaturesSection></FeaturesSection>
-   
-    <StatisticsCounter></StatisticsCounter>
+    <HowItWorks></HowItWorks>
       <Footer></Footer>
     </div>
   );

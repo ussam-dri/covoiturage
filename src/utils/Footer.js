@@ -1,75 +1,91 @@
-import React from "react";
-import { Facebook, Twitter, Youtube, Instagram } from "lucide-react";
+import React from 'react';
 
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
+  
   return (
-    <footer className="bg-gray-100 pt-12 pb-6">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          {/* Left Column - Top carpool routes */}
-          <div>
-            <h3 className="text-lg font-medium text-teal-800 mb-4">Top carpool routes</h3>
-            <ul className="space-y-3">
-              <li><a href="#" className="text-teal-700 hover:text-teal-500">Delhi → Chandigarh</a></li>
-              <li><a href="#" className="text-teal-700 hover:text-teal-500">Mumbai → Pune</a></li>
-              <li><a href="#" className="text-teal-700 hover:text-teal-500">Kanpur → Lucknow</a></li>
-              <li><a href="#" className="text-teal-700 hover:text-teal-500">Bengaluru → Chennai</a></li>
-              <li><a href="#" className="text-teal-700 hover:text-teal-500">Pune → Mumbai</a></li>
-              <li><a href="#" className="text-teal-700 hover:text-teal-500 font-medium">All carpool routes</a></li>
-              <li><a href="#" className="text-teal-700 hover:text-teal-500 font-medium">All carpool destinations</a></li>
-            </ul>
-          </div>
-
-          {/* Middle Column - About */}
-          <div>
-            <h3 className="text-lg font-medium text-teal-800 mb-4">About</h3>
-            <ul className="space-y-3">
-              <li><a href="#" className="text-teal-700 hover:text-teal-500">How It Works</a></li>
-              <li><a href="#" className="text-teal-700 hover:text-teal-500">About Us</a></li>
-              <li><a href="#" className="text-teal-700 hover:text-teal-500">Help Centre</a></li>
-              <li><a href="#" className="text-teal-700 hover:text-teal-500">Press</a></li>
-              <li><a href="#" className="text-teal-700 hover:text-teal-500">We're Hiring!</a></li>
-            </ul>
-          </div>
-
-          {/* Right Column - Language and Social */}
-          <div className="flex flex-col items-end">
-            <div className="mb-6">
-              <button className="bg-white text-blue-500 px-4 py-2 rounded-full shadow-sm border border-gray-200">
-                Language - Français
-              </button>
+    <footer className="bg-gray-800 text-white">
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex flex-col md:flex-row justify-between items-center">
+          {/* Logo and Copyright */}
+          <div className="mb-6 md:mb-0">
+            <div className="flex items-center">
+              <span className="text-2xl font-bold text-blue-400">codrive</span>
             </div>
-            
-            <div className="flex space-x-4">
-              <a href="#" className="text-blue-500 hover:text-blue-600">
-                <Facebook size={32} />
+            <p className="mt-2 text-sm text-gray-400">
+              &copy; {currentYear} codrive. All rights reserved.
+            </p>
+          </div>
+          
+          {/* Links */}
+          <div className="grid grid-cols-2 gap-8 md:gap-16 mb-6 md:mb-0">
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">Resources</h3>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Help Center</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Terms of Service</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">Company</h3>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">About Us</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Careers</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Contact</a></li>
+              </ul>
+            </div>
+          </div>
+          
+          {/* Social Media */}
+          <div className="mt-6 md:mt-0">
+            <h3 className="text-sm font-semibold uppercase tracking-wider mb-4 text-center md:text-right">Connect With Us</h3>
+            <div className="flex space-x-4 justify-center md:justify-end">
+              <a href="#" className="text-gray-400 hover:text-white">
+                <span className="sr-only">Facebook</span>
+                <img 
+                  src="https://img.icons8.com/ios/30/FFFFFF/facebook--v1.png" 
+                  alt="Facebook" 
+                  className="w-6 h-6 opacity-70 hover:opacity-100"
+                />
               </a>
-              <a href="#" className="text-blue-400 hover:text-blue-500">
-                <Twitter size={32} />
+              <a href="#" className="text-gray-400 hover:text-white">
+                <span className="sr-only">Instagram</span>
+                <img 
+                  src="https://img.icons8.com/ios/30/FFFFFF/instagram-new--v1.png" 
+                  alt="Instagram" 
+                  className="w-6 h-6 opacity-70 hover:opacity-100"
+                />
               </a>
-              <a href="#" className="text-red-600 hover:text-red-700">
-                <Youtube size={32} />
+              <a href="#" className="text-gray-400 hover:text-white">
+                <span className="sr-only">Twitter</span>
+                <img 
+                  src="https://img.icons8.com/ios/30/FFFFFF/twitter--v1.png" 
+                  alt="Twitter" 
+                  className="w-6 h-6 opacity-70 hover:opacity-100"
+                />
               </a>
-              <a href="#" className="text-pink-600 hover:text-pink-700">
-                <Instagram size={32} />
+              <a href="#" className="text-gray-400 hover:text-white">
+                <span className="sr-only">LinkedIn</span>
+                <img 
+                  src="https://img.icons8.com/ios/30/FFFFFF/linkedin--v1.png" 
+                  alt="LinkedIn" 
+                  className="w-6 h-6 opacity-70 hover:opacity-100"
+                />
+              </a>
+              <a href="#" className="text-gray-400 hover:text-white">
+                <span className="sr-only">YouTube</span>
+                <img 
+                  src="https://img.icons8.com/ios/30/FFFFFF/youtube-play--v1.png" 
+                  alt="YouTube" 
+                  className="w-6 h-6 opacity-70 hover:opacity-100"
+                />
               </a>
             </div>
           </div>
         </div>
-
-        {/* Bottom row with Terms and Copyright */}
-        <div className="border-t border-gray-200 pt-6 flex flex-col md:flex-row justify-between items-center">
-          <div>
-            <a href="#" className="text-gray-500 hover:text-gray-700">Terms and Conditions</a>
-          </div>
-          <div className="flex items-center mt-4 md:mt-0">
-            <div className="flex mr-2">
-              <span className="h-6 w-6 bg-teal-400 rounded-full mr-1"></span>
-              <span className="h-6 w-6 bg-teal-700 rounded-full"></span>
-            </div>
-            <span className="text-gray-600">Covoiturage, 2025 ©</span>
-          </div>
-        </div>
+        
+     
       </div>
     </footer>
   );

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Footer from "../utils/Footer";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -67,9 +68,8 @@ export default function Register() {
         <div className="flex items-center space-x-4">
           <img src="/images/logo.png" alt="ChutChutCar Logo" className="h-10" />
           <div className="space-x-4 font-myFont">
-            <a href="/" className="text-blue-600">Covoiturage</a>
-            <a href="#" className="text-gray-600">Trajets</a>
-            <a href="#" className="text-gray-600">Terms of Use</a>
+            <a href="/" className="text-blue-600">coDrive</a>
+      
           </div>
         </div>
       </nav>
@@ -134,6 +134,8 @@ export default function Register() {
           </p>
         </div>
       </div>
+        {/* Bottom row with Terms and Copyright */}
+      <Footer></Footer>
     </>
   );
 }

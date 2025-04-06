@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { loginSuccess } from "../redux/authSlice";
+import Footer from "../utils/Footer";
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -44,9 +45,8 @@ export default function Login() {
         <div className="flex items-center space-x-4">
           <img src="/images/logo.png" alt="ChutChutCar Logo" className="h-10" />
           <div className="space-x-4 font-myFont">
-            <a href="/" className="text-blue-600">Covoiturage</a>
-            <a href="#" className="text-gray-600">Trajets</a>
-            <a href="#" className="text-gray-600">Terms of Use</a>
+            <a href="/" className="text-blue-600">coDrive</a>
+          
           </div>
         </div>
       </nav>
@@ -96,6 +96,8 @@ export default function Login() {
           </p>
         </div>
       </div>
+        {/* Bottom row with Terms and Copyright */}
+       <Footer></Footer>
     </>
   );
 }

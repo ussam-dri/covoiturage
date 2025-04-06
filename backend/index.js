@@ -67,7 +67,7 @@ app.post("/login", (req, res) => {
     // Generate JWT token
     const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "1h" });
 
-    res.json({ message: "Login successful", token, user: { id: user.id, email: user.email, role: user.role } });
+    res.json({ message: "Login successful", token, user: { id: user.id, email: user.email, role: user.role,id:user.id,nom:user.nom,prenom:user.prenom } });
   });
 });
 
@@ -117,7 +117,7 @@ app.get("/users", (req, res) => {
 // Autocomplete for cities
 app.get("/autocomplete", (req, res) => {
   const { query } = req.query;
-
+  //console.log(query)
   if (!query) return res.json([]);
 
   const sql = `
@@ -135,7 +135,50 @@ app.get("/autocomplete", (req, res) => {
     }
   });
 });
+// create a trip
+app.post("/add-trip", (req, res) => {
+  const sql_req = `INSERT INTO trajet 
+    (date_depart, date_arrivee, heure_depart, heure_arrivee, ville_depart, ville_arriver, prix, nbr_places, fumer, animaux, musique, marque, matricule, id_driver) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
+  const {
+    date_depart,
+    date_arrivee,
+    heure_depart,
+    heure_arrivee,
+    ville_depart,
+    ville_arriver,
+    prix,
+    nbr_places,
+    fumer,
+    animaux,
+    musique,
+    marque,
+    matricule,
+    id_driver
+  } = req.body;
+
+  db.query(
+    sql_req,
+    [date_depart, date_arrivee, heure_depart, heure_arrivee, ville_depart, ville_arriver, prix, nbr_places, fumer, animaux, musique, marque, matricule, id_driver],
+    (err, result) => {
+      if (err) {
+        console.error("Error inserting trip:", err);
+        return res.status(500).json({ error: "Database error", details: err });
+      }
+      res.status(201).json({ message: "Trip added successfully", tripId: result.insertId });
+    }
+  );
+});
+app.get("/trips", (req, res) => {
+  db.query("SELECT * FROM trajet", (err, results) => {
+    if (err) {
+      res.status(500).json({ error: "Database error", details: err });
+    } else {
+      res.json(results);
+    }
+  });
+});
 // Start server
 const PORT = process.env.PORT || 5090;
 app.listen(PORT, () => {
