@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { loginSuccess } from "../redux/authSlice";
 import Footer from "../utils/Footer";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -25,22 +27,59 @@ export default function Login() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
+    
       const data = await response.json();
+    
       if (response.ok) {
-        dispatch(loginSuccess({ user: data.user, token: data.token }));
-        navigate("/"); // Redirect to home/dashboard
+        toast.success('Logged In successful!', {
+          position: 'top-right',
+          autoClose: 1500, // 3 seconds
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+        console.log("Login token:", data.user.token);
+        console.log("Dispatching:", { user: data.user, token: data.user.token });
+
+        // Store user data and token in Redux storec
+        dispatch(loginSuccess({ user: data.user, token: data.user.token }));
+    
+        // Wait 3 seconds (same as autoClose) before redirecting
+        setTimeout(() => {
+          navigate("/");
+        }, 1500);
       } else {
+        toast.error('Login failed', {
+          position: 'top-right',
+          autoClose: 1500,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
         setError(data.error || "Login failed. Please try again.");
       }
     } catch (error) {
-      console.error("Error:", error);
-      setError("An error occurred. Please try again later.");
+      toast.error("An error occurred. Please try again.", {
+        position: 'top-right',
+        autoClose: 1500,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+      setError("An unexpected error occurred.");
     }
+
   };
 
   return (
     <>
+    <ToastContainer />
       <nav className="flex justify-between items-center p-4 border-b">
         <div className="flex items-center space-x-4">
           <img src="/images/logo.png" alt="ChutChutCar Logo" className="h-10" />

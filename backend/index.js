@@ -8,6 +8,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+function verifyToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) return res.status(401).json({ message: "No token provided" });
+
+  const token = authHeader.split(" ")[1]; // Expected format: Bearer <token>
+  const secret = process.env.JWT_SECRET || "aa_çuazdç_a_dzu%%k;xaàç_";
+
+  jwt.verify(token, secret, (err, decoded) => {
+    if (err) return res.status(403).json({ message: "Invalid or expired token" });
+
+    req.user = decoded; // decoded contains user.id and user.role
+    next();
+  });
+}
+
 // Database connection
 const db = mysql.createConnection({
   host: "localhost",
@@ -26,7 +41,7 @@ db.connect((err) => {
 
 // User Registration
 app.post("/register", async (req, res) => {
-  const { nom, prenom, email, password, ville, adresse, cin, num_telephone, date_naissance, sexe, age } = req.body;
+  const { nom, prenom, email, password, ville, adresse, cin, num_telephone, date_naissance, sexe, age,role } = req.body;
 
   // Check if user already exists
   db.query("SELECT * FROM utilisateur WHERE email = ?", [email], async (err, results) => {
@@ -35,7 +50,7 @@ app.post("/register", async (req, res) => {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const def_role="passenger"
+    const def_role=role||"passenger"
     // Insert new user
     db.query(
       "INSERT INTO utilisateur (nom, prenom, email, password, ville, adresse, cin, num_telephone, date_naissance, sexe, age, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -51,22 +66,19 @@ app.post("/register", async (req, res) => {
 // User Login
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
-
   // Check if user exists
   db.query("SELECT * FROM utilisateur WHERE email = ?", [email], async (err, results) => {
     if (err) return res.status(500).json({ message: "Database error" });
     if (results.length === 0) return res.status(400).json({ message: "User not found" });
-
     const user = results[0];
     JWT_SECRET="aa_çuazdç_a_dzu%%k;xaàç_"
     // Validate password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
-
     // Generate JWT token
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "1h" });
-
-    res.json({ message: "Login successful", token, user: { id: user.id, email: user.email, role: user.role,id:user.id,nom:user.nom,prenom:user.prenom } });
+    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "3h" });
+    //console.log("Login token:", token);
+    res.json({ message: "Login successful", token, user: { id: user.id, email: user.email, role: user.role,id:user.id,nom:user.nom,prenom:user.prenom,token:token,num_telephone:user.num_telephone,cin:user.cin,date_naissance:user.date_naissance,ville:user.ville,sexe:user.sexe } });
   });
 });
 
@@ -176,6 +188,166 @@ app.get("/trips", (req, res) => {
     } else {
       res.json(results);
     }
+  });
+});
+// get user by id
+app.get("/user/:id", verifyToken, (req, res) => {
+  const userId = req.params.id;
+
+  db.query("SELECT * FROM utilisateur WHERE id = ?", [userId], (err, results) => {
+    if (err) return res.status(500).json({ message: "Database error", details: err });
+    if (results.length === 0) return res.status(404).json({ message: "User not found" });
+
+    res.json(results[0]);
+  });
+});
+// Update user endpoint
+app.put('/user/update', verifyToken, (req, res) => {
+ // const { id } = req.userId; // Get the user ID from the token
+  const { id,nom, prenom, email, num_telephone, cin, date_naissance, sexe, ville } = req.body;
+  if (!nom || !prenom || !email || !num_telephone || !cin || !date_naissance || !sexe || !ville) {
+    return res.status(400).json({ message: 'All fields are required' });
+  }
+
+  const query = `
+    UPDATE utilisateur SET 
+      nom = ?, 
+      prenom = ?, 
+      email = ?, 
+      num_telephone = ?, 
+      cin = ?, 
+      date_naissance = ?, 
+      sexe = ?, 
+      ville = ? 
+    WHERE id = ?`;
+
+  const values = [nom, prenom, email, num_telephone, cin, date_naissance, sexe, ville, id];
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      console.error('Error updating user:', err);
+      return res.status(500).json({ message: 'Failed to update user' });
+    }
+
+    if (result.affectedRows > 0) {
+      return res.status(200).json({ message: 'User updated successfully' });
+    } else {
+      return res.status(404).json({ message: 'User not found' });
+    }
+  });
+});
+// booking
+app.post("/book-trip", verifyToken, (req, res) => {
+  const { id_trajet, id_user } = req.body;
+
+  db.beginTransaction((err) => {
+    if (err) {
+      return res.status(500).json({ error: "Database error", details: err });
+    }
+
+    const insertReservationQuery = `
+      INSERT INTO bookings (id_trajet, id_passenger) VALUES (?, ?)
+    `;
+    db.query(insertReservationQuery, [id_trajet, id_user], (err, result) => {
+      if (err) {
+        return db.rollback(() => {
+          // Handle duplicate booking gracefully
+          if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ error: "You have already booked this trip." });
+          }
+          return res.status(500).json({ error: "Database error", details: err });
+        });
+      }
+
+      const updateNbrPlacesQuery = `
+        UPDATE trajet SET nbr_places = nbr_places - 1 
+        WHERE id_trajet = ? AND nbr_places > 0
+      `;
+      db.query(updateNbrPlacesQuery, [id_trajet], (err, updateResult) => {
+        if (err) {
+          return db.rollback(() => {
+            return res.status(500).json({ error: "Database error", details: err });
+          });
+        }
+
+        if (updateResult.affectedRows === 0) {
+          return db.rollback(() => {
+            return res.status(400).json({ error: "No available seats for this trip." });
+          });
+        }
+
+        db.commit((err) => {
+          if (err) {
+            return db.rollback(() => {
+              return res.status(500).json({ error: "Database error", details: err });
+            });
+          }
+
+          res.status(201).json({
+            message: "Trip booked successfully",
+            reservationId: result.insertId
+          });
+        });
+      });
+    });
+  });
+});
+//----------------------------------------------------- get trips by passenger ID -------------------------------------
+app.get("/passenger-trips/:id", verifyToken, (req, res) => {
+  const userId = req.params.id;
+  const sql = `
+    SELECT t.*,b.* FROM trajet t
+    JOIN bookings b ON t.id_trajet = b.id_trajet
+    WHERE b.id_passenger = ?
+  `;
+  db.query(sql, [userId], (err, results) => {
+    if (err) return res.status(500).json({ message: "Database error", details: err });
+    res.json(results);
+  });
+});
+
+//----------------------------------- get trips by driver ID -----------------------------------------------------------------------
+app.get("/driver-trips/:id", verifyToken, (req, res) => {
+  const userId = req.params.id;
+//   JOIN bookings b ON t.id_trajet = b.id_trajet
+
+  const sql = `
+    SELECT t.*FROM trajet t
+    WHERE t.id_driver = ?
+  `;
+
+  db.query(sql, [userId], (err, results) => {
+    if (err) return res.status(500).json({ message: "Database error", details: err });
+    res.json(results);
+  });
+});
+
+// View a trip
+app.get('/view-trip/:id',verifyToken, (req, res) => {
+  const id = req.params.id;
+  db.query('SELECT * FROM trajet WHERE id_trajet = ?', [id], (err, result) => {
+    if (err) return res.status(500).send(err);
+    if (result.length === 0) return res.status(404).send({ message: 'Trip not found' });
+    res.send(result[0]);
+  });
+});
+
+// Edit a trip
+app.put('/edit-trip/:id',verifyToken, (req, res) => {
+  const id = req.params.id;
+  const data = req.body;
+  db.query('UPDATE trajet SET ? WHERE id_trajet = ?', [data, id], (err) => {
+    if (err) return res.status(500).send(err);
+    res.send({ message: 'Trip updated successfully' });
+  });
+});
+
+// Delete a trip
+app.delete('/delete-trip/:id',verifyToken, (req, res) => {
+  const id = req.params.id;
+  db.query('DELETE FROM trajet WHERE id_trajet = ?', [id], (err) => {
+    if (err) return res.status(500).send(err);
+    res.send({ message: 'Trip deleted successfully' });
   });
 });
 // Start server

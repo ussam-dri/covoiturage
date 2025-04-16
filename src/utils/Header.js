@@ -1,23 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import useLogout from "./logout";
-import { UserCircleIcon } from "@heroicons/react/24/outline";
+import { useNavigate } from "react-router-dom";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
+
+import {
+  UserCircleIcon,
+  ArrowLeftOnRectangleIcon,
+  ArrowRightOnRectangleIcon,
+  Cog6ToothIcon,
+  ClipboardDocumentListIcon,
+} from "@heroicons/react/24/outline";
+import { ChevronDownIcon } from "@heroicons/react/20/solid";
 
 export const Header = ({ variant = "default" }) => {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const logout = useLogout();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest("#user-menu")) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
+  const navigate = useNavigate();
 
   const getDashboardLink = () => {
     if (!user || !user.role) return null;
@@ -27,7 +26,7 @@ export const Header = ({ variant = "default" }) => {
       case "driver":
         return { label: "Driver Dashboard", href: "/driver/dashboard" };
       case "passenger":
-        return { label: "Passenger Dashboard", href: "/passenger/dashboard" };
+        return { label: "Passenger Dashboard", href: "/passenger" };
       default:
         return null;
     }
@@ -36,67 +35,117 @@ export const Header = ({ variant = "default" }) => {
   const dashboardLink = getDashboardLink();
 
   return (
-    <nav className="flex justify-between items-center p-4 border-b">
+    <nav className="flex justify-between items-center p-4 border-b bg-white font-myFont">
       <div className="flex items-center space-x-4">
         <img src="/images/logo.png" alt="ChutChutCar Logo" className="h-10" />
-        <div className="space-x-4 font-myFont">
-          <a href="/" className="text-blue-600">CoDrive</a>
-        </div>
+        <a href="/" className="text-blue-600 text-lg font-semibold">
+          CoDrive
+        </a>
       </div>
 
       <div className="flex items-center space-x-4 font-myFont2">
-        <button className="text-blue-600">
-          <a href="/trips">See All Trips</a>
-        </button>
+        <a href="/trips" className="text-blue-600 hover:underline">
+          See All Trips
+        </a>
 
         {variant !== "passenger" && (
-          <button className="bg-blue-500 text-white px-4 py-2 rounded">
-            <a href="/driver/addTrajet">Post a ride</a>
-          </button>
+          <a
+            href="/driver/addTrajet"
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Post a ride
+          </a>
         )}
 
-        {/* User Dropdown */}
-        <div id="user-menu" className="relative">
-          <button
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="text-blue-600 focus:outline-none"
-          >
-            <UserCircleIcon className="w-8 h-8" />
-          </button>
+        <Menu as="div" className="relative inline-block text-left">
+          <div>
+            <MenuButton className="inline-flex items-center gap-x-1.5 rounded-full bg-white px-3 py-2 text-sm font-semibold text-blue-600 shadow ring-1 ring-blue-300 hover:bg-blue-50 focus:outline-none">
+              <UserCircleIcon className="w-6 h-6" />
+              <ChevronDownIcon className="w-5 h-5 text-blue-600" />
+            </MenuButton>
+          </div>
 
-          {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-lg p-2 z-50">
+          <MenuItems className="absolute right-0 z-10 mt-2 w-60 origin-top-right rounded-lg bg-white text-gray-800 shadow-lg ring-1 ring-black/10 focus:outline-none">
+            <div className="py-1">
               {isAuthenticated ? (
-                <div>
-                  <p className="text-gray-700 font-semibold px-2">
-                    {user.nom} {user.prenom}
-                  </p>
+                <>
+                  <MenuItem>
+                    {({ active }) => (
+                      <a
+                        href="/profile"
+                        className={`${
+                          active ? "bg-gray-100" : ""
+                        } flex items-center w-full text-left px-4 py-2 text-sm text-blue-600 font-semibold gap-2`}
+                      >
+                        <UserCircleIcon className="w-5 h-5" />
+                        {user.nom} {user.prenom}
+                        </a>
+                    )}
+                  </MenuItem>
 
                   {dashboardLink && (
-                    <a
-                      href={dashboardLink.href}
-                      className="block w-full text-left py-2 px-2 text-blue-600 hover:bg-gray-100 rounded"
-                    >
-                      {dashboardLink.label}
-                    </a>
+                    <MenuItem>
+                      {({ active }) => (
+                        <a
+                          href={dashboardLink.href}
+                          className={`${
+                            active ? "bg-gray-100" : ""
+                          } flex items-center px-4 py-2 text-sm text-blue-600 gap-2`}
+                        >
+                          <ClipboardDocumentListIcon className="w-5 h-5" />
+                          {dashboardLink.label}
+                        </a>
+                      )}
+                    </MenuItem>
                   )}
 
-                  <button
-                    onClick={logout}
-                    className="text-red-500 w-full text-left py-2 px-2 hover:bg-gray-100 rounded"
-                  >
-                    Logout
-                  </button>
-                </div>
+                  <MenuItem>
+                    {({ active }) => (
+                      <button
+                        onClick={logout}
+                        className={`${
+                          active ? "bg-gray-100" : ""
+                        } flex items-center w-full text-left px-4 py-2 text-sm text-red-600 gap-2`}
+                      >
+                        <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                        Logout
+                      </button>
+                    )}
+                  </MenuItem>
+                </>
               ) : (
-                <div>
-                  <a href="/login" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">Login</a>
-                  <a href="/register" className="block px-4 py-2 text-gray-700 hover:bg-gray-100">Register</a>
-                </div>
+                <>
+                  <MenuItem>
+                    {({ active }) => (
+                      <a
+                        href="/login"
+                        className={`${
+                          active ? "bg-gray-100" : ""
+                        } flex items-center px-4 py-2 text-sm gap-2`}
+                      >
+                        <ArrowLeftOnRectangleIcon className="w-5 h-5" />
+                        Login
+                      </a>
+                    )}
+                  </MenuItem>
+                  <MenuItem>
+                    {({ active }) => (
+                      <a
+                        href="/register"
+                        className={`${
+                          active ? "bg-gray-100" : ""
+                        } flex items-center px-4 py-2 text-sm gap-2`}
+                      >
+                        <Cog6ToothIcon className="w-5 h-5" />
+                        Register
+                      </a>
+                    )}
+                  </MenuItem>
+                </>
               )}
             </div>
-          )}
-        </div>
+          </MenuItems>
+        </Menu>
       </div>
     </nav>
   );

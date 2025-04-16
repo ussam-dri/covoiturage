@@ -1,7 +1,12 @@
 import { useState } from "react";
 import Footer from "../utils/Footer";
+import { ToastContainer, toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from "react-router-dom";
 
 export default function Register() {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     nom: "",
     prenom: "",
@@ -13,6 +18,7 @@ export default function Register() {
     num_telephone: "",
     date_naissance: "",
     sexe: "Male",
+    role: "",
   });
 
   // Function to calculate age from birth date
@@ -49,18 +55,57 @@ export default function Register() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
+  
       const data = await response.json();
       if (response.ok) {
-        alert("Registration successful!");
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
+        toast.success("Registration successful!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        // Optionally reset form
+        setFormData({
+          nom: "",
+          prenom: "",
+          email: "",
+          password: "",
+          ville: "",
+          adresse: "",
+          cin: "",
+          num_telephone: "",
+          date_naissance: "",
+          sexe: "Male",
+          role:'',
+        });
       } else {
-        alert("Error: " + data.error);
+        toast.error(data.error || "Registration failed", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("An error occurred.");
+      toast.error("An error occurred. Please try again.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
+  
 
   return (
     <>
@@ -117,6 +162,11 @@ export default function Register() {
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
               </select>
+              <select name="role" value={formData.role} onChange={handleChange}
+                className="w-full rounded-md border border-gray-300 p-2 text-gray-900 focus:outline-indigo-600">
+                <option value="driver">driver</option>
+                <option value="passenger">passenger</option>
+              </select>
             </div>
 
 
@@ -134,6 +184,7 @@ export default function Register() {
           </p>
         </div>
       </div>
+      <ToastContainer />
         {/* Bottom row with Terms and Copyright */}
       <Footer></Footer>
     </>

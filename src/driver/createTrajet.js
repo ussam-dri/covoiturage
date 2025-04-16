@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Car,
   Calendar,
@@ -12,8 +12,23 @@ import {
 } from 'lucide-react';
 import Footer from '../utils/Footer';
 import { Header } from '../utils/Header';
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 
 const CreateTrip = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
+  useEffect(() => { 
+  if (!(user?.role === "driver" || user?.role === "admin") || !isAuthenticated) {
+    console.error("Unauthorized access. Redirecting to login.");
+    navigate("/login");
+  } else {
+    console.log("Authorized access");
+  }});
+  
   const [formData, setFormData] = useState({
     date_depart: "",
     date_arrivee: "",
@@ -27,7 +42,8 @@ const CreateTrip = () => {
     animaux: "0",
     musique: "0",
     marque: "",
-    matricule: ""
+    matricule: "",
+    id_driver: user.id
   });
 
   const handleChange = (e) => {
@@ -49,7 +65,8 @@ const CreateTrip = () => {
       const data = await response.json();
 
       if (response.ok) {
-        alert('Trip created successfully!');
+                toast.success('Trip created successfully!'); // ✅ success toast
+        
         setFormData({
           date_depart: "",
           date_arrivee: "",
@@ -63,14 +80,19 @@ const CreateTrip = () => {
           animaux: "0",
           musique: "0",
           marque: "",
-          matricule: ""
+          matricule: "",
+          id_driver: user.id,
         });
       } else {
+        toast.error('Trip creation failed!'); // ✅ success toast
+
         alert(`Error: ${data.message}`);
       }
     } catch (error) {
+      toast.error('Trip creation failed!'); // ✅ success toast
+
       console.error('Error:', error);
-      alert('An error occurred while submitting the form.');
+      //alert('An error occurred while submitting the form.');
     }
   };
 
@@ -86,6 +108,7 @@ const CreateTrip = () => {
         </div>
       </nav> */}
 <Header></Header>
+<ToastContainer />
 <div className="mt-10 max-w-4xl mx-auto">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-t-xl p-8 text-white">
         <h1 className="text-3xl font-bold mb-2">Offer a Ride</h1>
@@ -102,7 +125,7 @@ const CreateTrip = () => {
             </h2>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Departure Date</label>
-              <input
+              <input required 
                 type="date"
                 name="date_depart"
                 value={formData.date_depart}
@@ -113,6 +136,7 @@ const CreateTrip = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Departure Time</label>
               <input
+              required 
                 type="time"
                 name="heure_depart"
                 value={formData.heure_depart}
@@ -123,6 +147,7 @@ const CreateTrip = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Departure City</label>
               <input
+              required 
                 type="text"
                 name="ville_depart"
                 value={formData.ville_depart}
@@ -141,7 +166,7 @@ const CreateTrip = () => {
             </h2>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Arrival Date</label>
-              <input
+              <input required 
                 type="date"
                 name="date_arrivee"
                 value={formData.date_arrivee}
@@ -151,7 +176,7 @@ const CreateTrip = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Arrival Time</label>
-              <input
+              <input required 
                 type="time"
                 name="heure_arrivee"
                 value={formData.heure_arrivee}
@@ -161,7 +186,7 @@ const CreateTrip = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Arrival City</label>
-              <input
+              <input required 
                 type="text"
                 name="ville_arriver"
                 value={formData.ville_arriver}
@@ -185,7 +210,7 @@ const CreateTrip = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Price per Seat (€)</label>
               <div className="relative">
                 <BanknoteIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
+                <input required 
                   type="number"
                   name="prix"
                   value={formData.prix}
@@ -200,7 +225,7 @@ const CreateTrip = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Available Seats</label>
               <div className="relative">
                 <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
+                <input required 
                   type="number"
                   name="nbr_places"
                   value={formData.nbr_places}
@@ -217,7 +242,7 @@ const CreateTrip = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Smoking Allowed</label>
               <select
-                name="fumer"
+                name="fumer" required 
                 value={formData.fumer}
                 onChange={handleChange}
                 className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
@@ -229,7 +254,7 @@ const CreateTrip = () => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Pets Allowed</label>
-              <select
+              <select required 
                 name="animaux"
                 value={formData.animaux}
                 onChange={handleChange}
@@ -242,7 +267,7 @@ const CreateTrip = () => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Music Preferences</label>
-              <select
+              <select required 
                 name="musique"
                 value={formData.musique}
                 onChange={handleChange}
@@ -258,7 +283,7 @@ const CreateTrip = () => {
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Car Brand</label>
-              <input
+              <input required 
                 type="text"
                 name="marque"
                 value={formData.marque}
@@ -270,7 +295,7 @@ const CreateTrip = () => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">License Plate</label>
-              <input
+              <input required 
                 type="text"
                 name="matricule"
                 value={formData.matricule}
