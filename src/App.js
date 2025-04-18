@@ -18,6 +18,9 @@ import AllTrips from "./passenger/allTrips";
 import Timeline from "./utils/maps";
 import ViewTrip from "./utils/ViewTrip";
 import EditTrip from "./utils/EditTrip";
+import DriverProfile from "./driver/publicProfile";
+import ForgotPassword from "./componenets/ForgotPassword";
+import ResetPassword from "./componenets/ResetPassword";
 // Protected Route Component
 const ProtectedRoute = ({ element, role }) => {
   const user = useSelector((state) => state.auth.user);
@@ -80,6 +83,10 @@ const App = () => {
             path="/passenger" 
             element={<ProtectedRoute element={<PassengerDashboard />} role="passenger" />} 
           />
+            <Route 
+            path="/passenger/trip/view/:id" 
+            element={<ProtectedRoute element={<ViewTrip />} roles="driver" />} 
+          />
           {/* -------------- Profile page for all users---------------------- */}
            <Route 
             path="/profile" 
@@ -94,11 +101,18 @@ const App = () => {
             path="/trips" 
              element={<AllTrips />} 
           />
-
-            <Route 
-            path="/timeline" 
-            element={<Timeline />} 
+          {/* -------------- reseet Password ------------------ */}
+              <Route 
+            path="/forgot-password" 
+             element={<ForgotPassword />} 
           />
+            <Route 
+            path="/reset-password/:token" 
+             element={<ResetPassword />} 
+          />
+          
+          <Route path="/driverProfile/:id" element={<DriverProfile />} />
+
         </Routes>
       </Router>
       </PersistGate>

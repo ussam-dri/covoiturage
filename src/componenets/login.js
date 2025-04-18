@@ -22,7 +22,7 @@ export default function Login() {
     setError(null); // Reset previous errors
 
     try {
-      const response = await fetch("http://localhost:5090/login", {
+      const response = await fetch("http://backend-codrive.zelobrix.com/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -117,7 +117,7 @@ export default function Login() {
             />
 
             <div className="text-right">
-              <a href="#" className="text-sm text-indigo-600 hover:text-indigo-500">Forgot password?</a>
+              <a href="/forgot-password" className="text-sm text-indigo-600 hover:text-indigo-500">Forgot password?</a>
             </div>
 
             {error && <p className="text-red-500 text-sm">{error}</p>}

@@ -7,6 +7,8 @@ const cors = require("cors");
 const app = express();
 app.use(cors());
 app.use(express.json());
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 
 function verifyToken(req, res, next) {
   const authHeader = req.headers["authorization"];
@@ -76,7 +78,7 @@ app.post("/login", (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
     // Generate JWT token
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "3h" });
+    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "10h" });
     //console.log("Login token:", token);
     res.json({ message: "Login successful", token, user: { id: user.id, email: user.email, role: user.role,id:user.id,nom:user.nom,prenom:user.prenom,token:token,num_telephone:user.num_telephone,cin:user.cin,date_naissance:user.date_naissance,ville:user.ville,sexe:user.sexe } });
   });
@@ -182,7 +184,13 @@ app.post("/add-trip", (req, res) => {
   );
 });
 app.get("/trips", (req, res) => {
-  db.query("SELECT * FROM trajet", (err, results) => {
+  const query = `
+    SELECT t.*, u.nom, u.prenom, u.rating 
+    FROM trajet t 
+    JOIN utilisateur u ON t.id_driver = u.id
+  `;
+
+  db.query(query, (err, results) => {
     if (err) {
       res.status(500).json({ error: "Database error", details: err });
     } else {
@@ -190,6 +198,8 @@ app.get("/trips", (req, res) => {
     }
   });
 });
+
+
 // get user by id
 app.get("/user/:id", verifyToken, (req, res) => {
   const userId = req.params.id;
@@ -237,6 +247,7 @@ app.put('/user/update', verifyToken, (req, res) => {
   });
 });
 // booking
+
 app.post("/book-trip", verifyToken, (req, res) => {
   const { id_trajet, id_user } = req.body;
 
@@ -251,7 +262,6 @@ app.post("/book-trip", verifyToken, (req, res) => {
     db.query(insertReservationQuery, [id_trajet, id_user], (err, result) => {
       if (err) {
         return db.rollback(() => {
-          // Handle duplicate booking gracefully
           if (err.code === 'ER_DUP_ENTRY') {
             return res.status(400).json({ error: "You have already booked this trip." });
           }
@@ -276,27 +286,93 @@ app.post("/book-trip", verifyToken, (req, res) => {
           });
         }
 
-        db.commit((err) => {
-          if (err) {
+        // Get passenger email
+        const getEmailQuery = `SELECT email, nom, prenom FROM utilisateur WHERE id = ?`;
+        db.query(getEmailQuery, [id_user], (err, emailResult) => {
+          if (err || emailResult.length === 0) {
             return db.rollback(() => {
-              return res.status(500).json({ error: "Database error", details: err });
+              return res.status(500).json({ error: "Error fetching user email", details: err });
             });
           }
 
-          res.status(201).json({
-            message: "Trip booked successfully",
-            reservationId: result.insertId
+          const { email, nom, prenom } = emailResult[0];
+
+          // Get trip info for email
+          const getTripDetailsQuery = `SELECT * FROM trajet WHERE id_trajet = ?`;
+          db.query(getTripDetailsQuery, [id_trajet], (err, tripResult) => {
+            if (err || tripResult.length === 0) {
+              return db.rollback(() => {
+                return res.status(500).json({ error: "Error fetching trip details", details: err });
+              });
+            }
+
+            const trip = tripResult[0];
+
+            // Nodemailer configuration
+            const transporter = nodemailer.createTransport({
+             
+              host: 'covoiturage.zelobrix.com',
+              port: 465,
+              secure: true,
+              auth: {
+                user: 'admin@covoiturage.zelobrix.com',         // replace with your email
+                pass: '0V=3=yku0ol*'  // use app password if 2FA
+              },
+              tls: {
+                rejectUnauthorized: false
+              }
+            });
+
+            const mailOptions = {
+              from: 'admin@covoiturage.zelobrix.com',
+              to: email,
+              subject: 'Booking Confirmation - Covoiturage App',
+              html: `
+                <h3>Bonjour ${prenom} ${nom},</h3>
+                <p>Votre réservation a été effectuée avec succès !</p>
+                <h4>Détails du trajet :</h4>
+                <ul>
+                  <li><strong>Départ:</strong> ${trip.ville_depart}</li>
+                  <li><strong>Arrivée:</strong> ${trip.ville_arriver}</li>
+                  <li><strong>Date:</strong> ${trip.date_depart}</li>
+                  <li><strong>Heure:</strong> ${trip.heure_depart}</li>
+                  <li><strong>Prix:</strong> ${trip.prix} DH</li>
+                </ul>
+                <p>Merci d'avoir utilisé notre plateforme !</p>
+              `
+            };
+
+            transporter.sendMail(mailOptions, (err, info) => {
+              if (err) {
+                console.error("Email sending failed:", err);
+                // You may choose to still commit even if email fails
+              }
+
+              db.commit((err) => {
+                if (err) {
+                  return db.rollback(() => {
+                    return res.status(500).json({ error: "Database commit error", details: err });
+                  });
+                }
+
+                res.status(201).json({
+                  message: "Trip booked successfully",
+                  reservationId: result.insertId
+                });
+              });
+            });
           });
         });
       });
     });
   });
 });
+
 //----------------------------------------------------- get trips by passenger ID -------------------------------------
 app.get("/passenger-trips/:id", verifyToken, (req, res) => {
   const userId = req.params.id;
   const sql = `
-    SELECT t.*,b.* FROM trajet t
+    SELECT t.*,b.id_trajet,b.id_passenger FROM trajet t
     JOIN bookings b ON t.id_trajet = b.id_trajet
     WHERE b.id_passenger = ?
   `;
@@ -350,6 +426,168 @@ app.delete('/delete-trip/:id',verifyToken, (req, res) => {
     res.send({ message: 'Trip deleted successfully' });
   });
 });
+// rate driver and update driver rating
+app.post("/passenger/rate-driver", verifyToken, (req, res) => {
+  const { id_driver, rating,id_passenger } = req.body;
+  const userId = req.user.id; // Get the user ID from the token
+const message_optional = req.body.message || null; // Optional message field
+  // Insert rating into the database
+  db.query(
+    "INSERT INTO driverProfile (id_driver, id_passenger, rating,message) VALUES (?, ?, ?,?)",
+    [id_driver, id_passenger, rating,message_optional],
+    (err) => {
+      if (err) return res.status(500).json({ message: "Database error", details: err });
+
+      // Update driver's average rating
+      db.query(
+        "UPDATE utilisateur SET rating = (SELECT AVG(rating) FROM driverProfile WHERE id_driver = ?) WHERE id = ?",
+        [id_driver, id_driver],
+        (err) => {
+          if (err) return res.status(500).json({ message: "Database error", details: err });
+          res.json({ message: "Rating submitted successfully" });
+        }
+      );
+    }
+  );
+});
+//driver's profile
+app.get("/driver/:id/reviews", verifyToken, (req, res) => {
+  const id = req.params.id;
+
+  const query = `
+    SELECT r.id_passenger, r.rating, r.message, r.created_at, u.nom AS passenger_nom, u.prenom AS passenger_prenom
+    FROM driverProfile r
+    JOIN utilisateur u ON u.id = r.id_passenger
+    WHERE r.id_driver = ?
+    ORDER BY r.created_at DESC
+  `;
+
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      return res.status(500).json({ message: "Database error", details: err });
+    }
+
+    res.json(result); // return full list of reviews
+  });
+});
+// cancel trip
+app.delete("/cancel-trip/:id", verifyToken, (req, res) => {
+  const id = req.params.id;
+  db.query("DELETE FROM bookings WHERE id_trajet = ?", [id], (err) => {
+    if (err) return res.status(500).json({ message: "Database error", details: err });
+    res.json({ message: "Trip canceled successfully" });
+  });
+});
+// get all reviews for a driver
+app.get("/driver/reviews/:id", verifyToken, (req, res) => {
+  const id = req.params.id;
+  const query = `
+    SELECT r.*, u.nom AS passenger_nom, u.prenom AS passenger_prenom
+    FROM driverProfile r
+    JOIN utilisateur u ON u.id = r.id_passenger
+    WHERE r.id_driver = ?
+  `;
+  db.query(query, [id], (err, results) => {
+    if (err) return res.status(500).json({ message: "Database error", details: err });
+    res.json(results);
+  });
+});
+
+/// -------------- email verification ------------------
+const transporter = nodemailer.createTransport({
+             
+  host: 'covoiturage.zelobrix.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: 'admin@covoiturage.zelobrix.com',         // replace with your email
+    pass: '0V=3=yku0ol*'  // use app password if 2FA
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
+});
+// ---------------------------  password reset request -----------------------------------------
+app.post('/forgot-password', (req, res) => {
+  const { email } = req.body;
+
+  const findUserQuery = `SELECT * FROM utilisateur WHERE email = ?`;
+  db.query(findUserQuery, [email], (err, results) => {
+    if (err) return res.status(500).json({ message: 'Database error', error: err });
+    if (results.length === 0) return res.status(404).json({ message: 'User not found' });
+
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    const expires = new Date(Date.now() + 3600000); // 1 hour
+
+    const updateUserQuery = `
+      UPDATE utilisateur SET reset_token = ?, reset_token_expiry = ?
+      WHERE email = ?
+    `;
+    db.query(updateUserQuery, [resetToken, expires, email], (err) => {
+      if (err) return res.status(500).json({ message: 'Error saving reset token', error: err });
+
+      const resetLink = `http://backend-codrive.zelobrix.com/reset-password/${resetToken}`;
+
+      const mailOptions = {
+        from: '"CoDrive" <admin@covoiturage.zelobrix.com>',
+        to: email,
+        subject: 'Password Reset Link',
+        text: `Click on this link to reset your password: ${resetLink}`
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error('Error sending email:', error);
+          return res.status(500).json({ message: 'Email error', error });
+        }
+
+        res.status(200).json({ message: 'Password reset link sent to your email' });
+      });
+    });
+  });
+});
+// reset password
+app.post('/reset-password/:token', async (req, res) => {
+  const { token } = req.params;
+  const { newPassword } = req.body;
+
+  const findUserQuery = `
+    SELECT * FROM utilisateur 
+    WHERE reset_token = ? AND reset_token_expiry > NOW()
+  `;
+  db.query(findUserQuery, [token], async (err, results) => {
+    if (err) return res.status(500).json({ message: 'Database error', error: err });
+    if (results.length === 0) return res.status(400).json({ message: 'Invalid or expired token' });
+
+    const user = results[0];
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    const updatePasswordQuery = `
+      UPDATE utilisateur 
+      SET password = ?, reset_token = NULL, reset_token_expiry = NULL 
+      WHERE id = ?
+    `;
+    db.query(updatePasswordQuery, [hashedPassword, user.id], (err) => {
+      if (err) return res.status(500).json({ message: 'Error updating password', error: err });
+
+      res.json({ message: 'Password updated successfully' });
+    });
+  });
+});
+//change password
+app.post('/change-password', async (req, res) => {
+  const { Newpassword, id } = req.body;
+
+  const hashedPassword = await bcrypt.hash(Newpassword, 10);
+
+  const updatePasswordQuery = `UPDATE utilisateur SET password = ? WHERE id = ?`;
+  db.query(updatePasswordQuery, [hashedPassword, id], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Database error', error: err });
+
+    res.status(200).json({ message: "Password changed successfully" });
+  });
+});
+//
 // Start server
 const PORT = process.env.PORT || 5090;
 app.listen(PORT, () => {

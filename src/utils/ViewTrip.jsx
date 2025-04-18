@@ -3,12 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
 import Footer from './Footer';
 import { useSelector } from "react-redux";
-
+import {User,ShieldCheck} from 'lucide-react';
 function ViewTrip() {
   const { user } = useSelector((state) => state.auth);
   const { id } = useParams();
   const [trip, setTrip] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [driver, setDriver] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,9 +29,32 @@ function ViewTrip() {
         setIsLoading(false);
       }
     };
+  
     fetchTrip();
   }, [id, user]);
-
+  
+  useEffect(() => {
+    const fetchDriver = async () => {
+      if (!trip?.id_driver) return;
+      try {
+        setIsLoading(true);
+        const res = await fetch(`http://localhost:5090/user/${trip.id_driver}`, {
+          headers: {
+            Authorization: `Bearer ${user?.token}`,
+          },
+        });
+        const data = await res.json();
+        setDriver(data);
+      } catch (error) {
+        console.error("Failed to fetch driver:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
+    fetchDriver();
+  }, [trip, user]);
+  
   if (isLoading && !trip) {
     return (
       <>
@@ -56,7 +80,28 @@ function ViewTrip() {
               <h2 className="text-2xl font-bold text-white">Trip Details</h2>
               <p className="text-blue-100 mt-1">View information about this trip</p>
             </div>
-            
+            <div className="bg-white shadow  overflow-hidden mb-8">
+              <div className="bg-gradient-to-r from-blue-200 to-purple-300 p-6 text-black">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                  <div className="flex items-center mb-4 md:mb-0">
+                    <div className="bg-white text-blue-500 rounded-full p-3 mr-4">
+                      <User size={32} />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-semibold">{driver?.prenom} {driver?.nom}</h2>
+                      <p className="text-blue-900 flex items-center gap-1">
+                        <ShieldCheck size={16} />
+                        Verified Driver
+                      </p>
+                    </div>
+                  </div>
+               
+                </div>
+              </div>
+                  
+                  
+</div>
+
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="border-b pb-4 md:border-b-0 md:pb-0 md:border-r md:pr-6">
