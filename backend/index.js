@@ -49,7 +49,7 @@ app.post("/register", async (req, res) => {
   db.query("SELECT * FROM utilisateur WHERE email = ?", [email], async (err, results) => {
     if (err) return res.status(500).json({ message: "Database error-in registering user to db" });
     if (results.length > 0) return res.status(400).json({ message: "User already exists" });
-
+    console.log("role",role);
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     const def_role=role||"passenger"
@@ -418,14 +418,45 @@ app.put('/edit-trip/:id',verifyToken, (req, res) => {
   });
 });
 
-// Delete a trip
-app.delete('/delete-trip/:id',verifyToken, (req, res) => {
+// Delete a trip and its related bookings
+app.delete('/delete-trip/:id', verifyToken, (req, res) => {
   const id = req.params.id;
-  db.query('DELETE FROM trajet WHERE id_trajet = ?', [id], (err) => {
-    if (err) return res.status(500).send(err);
-    res.send({ message: 'Trip deleted successfully' });
+
+  db.beginTransaction((err) => {
+    if (err) return res.status(500).json({ error: 'Database error', details: err });
+
+    // Delete related bookings first
+    const deleteBookingsQuery = 'DELETE FROM bookings WHERE id_trajet = ?';
+    db.query(deleteBookingsQuery, [id], (err) => {
+      if (err) {
+        return db.rollback(() => {
+          return res.status(500).json({ error: 'Failed to delete bookings', details: err });
+        });
+      }
+
+      // Then delete the trip
+      const deleteTripQuery = 'DELETE FROM trajet WHERE id_trajet = ?';
+      db.query(deleteTripQuery, [id], (err) => {
+        if (err) {
+          return db.rollback(() => {
+            return res.status(500).json({ error: 'Failed to delete trip', details: err });
+          });
+        }
+
+        db.commit((err) => {
+          if (err) {
+            return db.rollback(() => {
+              return res.status(500).json({ error: 'Commit failed', details: err });
+            });
+          }
+
+          res.status(200).json({ message: 'Trip and related bookings deleted successfully' });
+        });
+      });
+    });
   });
 });
+
 // rate driver and update driver rating
 app.post("/passenger/rate-driver", verifyToken, (req, res) => {
   const { id_driver, rating,id_passenger } = req.body;
@@ -587,7 +618,16 @@ app.post('/change-password', async (req, res) => {
     res.status(200).json({ message: "Password changed successfully" });
   });
 });
-//
+//admin part
+// delete user
+app.delete('/delete-user/:id',verifyToken, (req, res) => {
+  const userId = req.params.id;
+  db.query('DELETE FROM utilisateur WHERE id = ?', [userId], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Database error', details: err });
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User deleted successfully' });
+  });
+});
 // Start server
 const PORT = process.env.PORT || 5090;
 app.listen(PORT, () => {

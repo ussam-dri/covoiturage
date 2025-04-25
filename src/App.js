@@ -15,12 +15,13 @@ import EditMember from "./admin/editMember";
 import ProfilePage from "./utils/profile";
 import PassengerDashboard from "./passenger/passengerDashboard";
 import AllTrips from "./passenger/allTrips";
-import Timeline from "./utils/maps";
 import ViewTrip from "./utils/ViewTrip";
 import EditTrip from "./utils/EditTrip";
 import DriverProfile from "./driver/publicProfile";
 import ForgotPassword from "./componenets/ForgotPassword";
 import ResetPassword from "./componenets/ResetPassword";
+import EditProfiles from "./admin/editProfiles";
+import AdminViewUser from "./admin/profileUsers";
 // Protected Route Component
 const ProtectedRoute = ({ element, role }) => {
   const user = useSelector((state) => state.auth.user);
@@ -46,17 +47,21 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Admin Protected Routes */}
+          {/* --------------------------------  Admin Protected Routes  -------------------------------------------- */}
           <Route 
             path="/admin" 
             element={<ProtectedRoute element={<AdminDashboard />} role="admin" />} 
           />
          
           <Route 
-            path="/admin/editMember" 
-            element={<ProtectedRoute element={<EditMember />} role="admin" />} 
+            path="/admin/editMember/:id" 
+            element={<ProtectedRoute element={<EditProfiles />} role="admin" />} 
           />
-           {/* Driver Protected Routes */}
+           <Route 
+            path="/admin/viewMember/:id" 
+            element={<ProtectedRoute element={<AdminViewUser />} role="admin" />} 
+          />
+           {/* ---------------- Driver Protected Routes ----------------------------------------*/}
           <Route 
             path="/driver/addTrajet" 
             element={<ProtectedRoute element={<CreateTrip />} roles={["driver", "admin"]} />} 
@@ -66,10 +71,10 @@ const App = () => {
             element={<ProtectedRoute element={<DriverDashboard />} roles="driver" />} 
           />
           
-          <Route 
+          {/* <Route 
             path="/driver/editMember" 
-            element={<ProtectedRoute element={<EditMember />} role="role" />} 
-          />
+            element={<ProtectedRoute element={<EditMember />} role="driver" />} 
+          /> */}
             <Route 
             path="/driver/trip/view/:id" 
             element={<ProtectedRoute element={<ViewTrip />} roles={["driver", "admin"]} />} 

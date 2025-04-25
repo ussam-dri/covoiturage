@@ -50,7 +50,7 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("https://backend-codrive.zelobrix.com/register", {
+      const response = await fetch("http://localhost:5090/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -162,10 +162,11 @@ export default function Register() {
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
               </select>
-              <select name="role" value={formData.role} onChange={handleChange}
+              <select name="role" value={formData.role} onChange={handleChange} 
                 className="w-full rounded-md border border-gray-300 p-2 text-gray-900 focus:outline-indigo-600">
-                <option value="driver">driver</option>
                 <option value="passenger">passenger</option>
+                <option value="driver">driver</option>
+                
               </select>
             </div>
 

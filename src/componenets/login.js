@@ -22,7 +22,7 @@ export default function Login() {
     setError(null); // Reset previous errors
 
     try {
-      const response = await fetch("http://backend-codrive.zelobrix.com/login", {
+      const response = await fetch("http://localhost:5090/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

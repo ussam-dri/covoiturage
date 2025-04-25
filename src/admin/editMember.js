@@ -4,7 +4,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { Header } from '../utils/Header';
 import Footer from '../utils/Footer';
 import { useSelector } from "react-redux";
-
+//------------------------------- this page is used for all users its not admin part----- DO NOT REMOVE & DO NOT EDIT --------------
 export default function EditMember() {
   const { user } = useSelector((state) => state.auth);
 
