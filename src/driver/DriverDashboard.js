@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from '../utils/Header';
 import {
-  Users, Settings, MapPin, Calendar, DollarSign, Star, Car, Eye, Pencil, Trash2, ChevronRight
+  Users, Settings, MapPin, Calendar, DollarSign, Star, Car, Eye, Pencil, Trash2, ChevronRight, ClipboardList
 } from 'lucide-react';
 import { useSelector } from "react-redux";
 import { useNavigate } from 'react-router-dom';
+import Requests from '../driver/requests'; // Import the new Requests component
 
 function DriverDashboard() {
   const [activeSection, setActiveSection] = useState('trips');
@@ -130,7 +131,6 @@ function DriverDashboard() {
           <Car size={48} className="mx-auto text-gray-300 mb-4" />
           <h3 className="text-xl font-medium text-gray-700">No {tripView} trips found</h3>
           <p className="text-gray-500 mt-2">Your {tripView} trips will appear here once scheduled.</p>
-          
         </div>
       );
     }
@@ -288,8 +288,6 @@ function DriverDashboard() {
                 {view.charAt(0).toUpperCase() + view.slice(1)} Trips
               </button>
             ))}
-            
-            
           </div>
           
           {renderTrips()}
@@ -316,6 +314,10 @@ function DriverDashboard() {
           {renderRatings()}
         </div>
       );
+    }
+
+    if (activeSection === 'requests') {
+      return <Requests />;
     }
 
     return (
@@ -348,6 +350,17 @@ function DriverDashboard() {
               >
                 <Car size={20} />
                 <span className="font-medium">My Trips</span>
+              </button>
+              <button 
+                onClick={() => setActiveSection('requests')} 
+                className={`flex items-center space-x-3 px-4 py-3 w-full rounded-lg transition-colors ${
+                  activeSection === 'requests' 
+                    ? 'bg-blue-50 text-blue-700' 
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <ClipboardList size={20} />
+                <span className="font-medium">Requests</span>
               </button>
               <button 
                 onClick={() => setActiveSection('payments')} 
@@ -411,6 +424,7 @@ function DriverDashboard() {
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800">
               {activeSection === 'trips' && 'Your Trips'}
+              {activeSection === 'requests' && 'Booking Requests'}
               {activeSection === 'payments' && 'Earnings & Payments'}
               {activeSection === 'ratings' && 'Passenger Ratings'}
               {activeSection === 'settings' && 'Account Settings'}

@@ -12,10 +12,11 @@ import {
   PencilSquareIcon,
   TrashIcon,
   UserCircleIcon,
-  EyeIcon
+  EyeIcon,PaperAirplaneIcon
 } from '@heroicons/react/24/outline';
 import { deleteUser } from '../redux/userSlice';
 import { Header } from '../utils/Header';
+import AdminTrips from './adminTrips'; // Import the AllTrips component
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('members');
@@ -33,7 +34,11 @@ function AdminDashboard() {
     const fetchUsers = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("http://localhost:5090/users");
+        const response = await fetch("http://localhost:5090/users", {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
         if (!response.ok) throw new Error("Failed to fetch users");
         const data = await response.json();
         setUsers(data);
@@ -45,7 +50,7 @@ function AdminDashboard() {
     };
 
     fetchUsers();
-  }, []);
+  }, [user.token]);
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
@@ -64,7 +69,7 @@ function AdminDashboard() {
       const response = await fetch(`http://localhost:5090/delete-user/${userId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${user.token}`,
+          Authorization: `Bearer ${user.token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -94,6 +99,7 @@ function AdminDashboard() {
 
   const sidebarItems = [
     { id: 'members', icon: UserIcon, label: 'Members' },
+    { id: 'Trips', icon: PaperAirplaneIcon, label: 'Trips' },
     { id: 'payment', icon: HeartIcon, label: 'Payment' },
     { id: 'orders', icon: ShoppingBagIcon, label: 'Orders' },
     { id: 'profile', icon: Cog6ToothIcon, label: 'Profile' },
@@ -259,8 +265,13 @@ function AdminDashboard() {
             </div>
           )}
 
+          {/* Render AllTrips when Trips tab is active */}
+          {activeTab === 'Trips' && (
+            <AdminTrips />
+          )}
+
           {/* Other tabs */}
-          {activeTab !== 'members' && (
+          {activeTab !== 'members' && activeTab !== 'Trips' && (
             <div className="text-center py-16 bg-white rounded-lg shadow-sm border border-gray-200">
               <h3 className="text-xl font-semibold text-gray-800">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Tab</h3>
               <p className="text-gray-500 mt-2">This tab is not implemented in this example</p>

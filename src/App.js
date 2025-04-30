@@ -22,6 +22,8 @@ import ForgotPassword from "./componenets/ForgotPassword";
 import ResetPassword from "./componenets/ResetPassword";
 import EditProfiles from "./admin/editProfiles";
 import AdminViewUser from "./admin/profileUsers";
+import AdminEditTrip from "./admin/editTrip";
+import Requests from "./driver/requests";
 // Protected Route Component
 const ProtectedRoute = ({ element, role }) => {
   const user = useSelector((state) => state.auth.user);
@@ -61,6 +63,15 @@ const App = () => {
             path="/admin/viewMember/:id" 
             element={<ProtectedRoute element={<AdminViewUser />} role="admin" />} 
           />
+            <Route 
+            path="/admin/viewTrip/:id" 
+            element={<ProtectedRoute element={<ViewTrip />} role="admin" />} 
+          />
+           <Route 
+            path="/admin/editTrip/:id" 
+            element={<ProtectedRoute element={<AdminEditTrip />} role="admin" />} 
+          />
+            
            {/* ---------------- Driver Protected Routes ----------------------------------------*/}
           <Route 
             path="/driver/addTrajet" 
@@ -69,6 +80,10 @@ const App = () => {
           <Route 
             path="/driver/dashboard" 
             element={<ProtectedRoute element={<DriverDashboard />} roles="driver" />} 
+          />
+            <Route 
+            path="/driver/requests" 
+            element={<ProtectedRoute element={<Requests />} roles="driver" />} 
           />
           
           {/* <Route 

@@ -246,8 +246,170 @@ app.put('/user/update', verifyToken, (req, res) => {
     }
   });
 });
-// booking
+// driver accepting or refusing 
+app.post("/driver/booking-action", verifyToken, (req, res) => {
+  const { booking_id, action } = req.body; // action: "accept" or "reject"
+  const driverId = req.user.id; // From JWT token
 
+  if (!['accept', 'reject'].includes(action)) {
+    return res.status(400).json({ error: "Invalid action. Must be 'accept' or 'reject'." });
+  }
+
+  db.beginTransaction((err) => {
+    if (err) {
+      return res.status(500).json({ error: "Database error", details: err });
+    }
+
+    // Verify the booking exists and belongs to the driver's trip
+    const getBookingQuery = `
+      SELECT a.*, t.id_driver, t.nbr_places 
+      FROM acceptations a 
+      JOIN trajet t ON a.id_trajet = t.id_trajet 
+      WHERE a.id = ? AND a.status = 'pending'
+    `;
+    db.query(getBookingQuery, [booking_id], (err, bookingResult) => {
+      if (err || bookingResult.length === 0) {
+        return db.rollback(() => {
+          return res.status(404).json({ error: "Booking request not found or not pending." });
+        });
+      }
+
+      const booking = bookingResult[0];
+      if (booking.id_driver !== driverId) {
+        return db.rollback(() => {
+          return res.status(403).json({ error: "You are not authorized to manage this booking request." });
+        });
+      }
+
+      // If rejecting, restore the seat count
+      if (action === 'reject') {
+        const restoreSeatsQuery = `UPDATE trajet SET nbr_places = nbr_places + 1 WHERE id_trajet = ?`;
+        db.query(restoreSeatsQuery, [booking.id_trajet], (err) => {
+          if (err) {
+            return db.rollback(() => {
+              return res.status(500).json({ error: "Failed to restore seats", details: err });
+            });
+          }
+          updateBookingStatus();
+        });
+      } else {
+        updateBookingStatus();
+      }
+
+      function updateBookingStatus() {
+        // Update booking status in acceptations
+        const newStatus = action === 'accept' ? 'accepted' : 'rejected';
+        const updateBookingQuery = `UPDATE acceptations SET status = ? WHERE id = ?`;
+        db.query(updateBookingQuery, [newStatus, booking_id], (err) => {
+          if (err) {
+            return db.rollback(() => {
+              return res.status(500).json({ error: "Failed to update booking request status", details: err });
+            });
+          }
+
+          // Fetch passenger details for email notification
+          const getPassengerQuery = `SELECT email, nom, prenom FROM utilisateur WHERE id = ?`;
+          db.query(getPassengerQuery, [booking.id_passenger], (err, passengerResult) => {
+            if (err || passengerResult.length === 0) {
+              return db.rollback(() => {
+                return res.status(500).json({ error: "Error fetching passenger email", details: err });
+              });
+            }
+
+            const passenger = passengerResult[0];
+
+            // Fetch trip details for email
+            const getTripQuery = `SELECT * FROM trajet WHERE id_trajet = ?`;
+            db.query(getTripQuery, [booking.id_trajet], (err, tripResult) => {
+              if (err || tripResult.length === 0) {
+                return db.rollback(() => {
+                  return res.status(500).json({ error: "Error fetching trip details", details: err });
+                });
+              }
+
+              const trip = tripResult[0];
+
+              // Nodemailer configuration
+              const transporter = nodemailer.createTransport({
+                host: 'covoiturage.zelobrix.com',
+                port: 465,
+                secure: true,
+                auth: {
+                  user: 'admin@covoiturage.zelobrix.com',
+                  pass: '0V=3=yku0ol*'
+                },
+                tls: {
+                  rejectUnauthorized: false
+                }
+              });
+
+              const mailOptions = {
+                from: 'admin@covoiturage.zelobrix.com',
+                to: passenger.email,
+                subject: `Booking Request ${newStatus === 'accepted' ? 'Accepted' : 'Rejected'} - Covoiturage App`,
+                html: `
+                  <h3>Bonjour ${passenger.prenom} ${passenger.nom},</h3>
+                  <p>Votre demande de réservation a été ${newStatus === 'accepted' ? 'acceptée' : 'rejetée'} par le conducteur.</p>
+                  <h4>Détails du trajet :</h4>
+                  <ul>
+                    <li><strong>Départ:</strong> ${trip.ville_depart}</li>
+                    <li><strong>Arrivée:</strong> ${trip.ville_arriver}</li>
+                    <li><strong>Date:</strong> ${trip.date_depart}</li>
+                    <li><strong>Heure:</strong> ${trip.heure_depart}</li>
+                    <li><strong>Prix:</strong> ${trip.prix} DH</li>
+                  </ul>
+                  <p>${newStatus === 'accepted' ? 'Bon voyage !' : 'Veuillez chercher un autre trajet.'}</p>
+                  <p>Merci d'avoir utilisé notre plateforme !</p>
+                `
+              };
+
+              transporter.sendMail(mailOptions, (err, info) => {
+                if (err) {
+                  console.error("Email sending failed:", err);
+                }
+
+                db.commit((err) => {
+                  if (err) {
+                    return db.rollback(() => {
+                      return res.status(500).json({ error: "Database commit error", details: err });
+                    });
+                  }
+
+                  res.status(200).json({
+                    message: `Booking request ${newStatus} successfully.`
+                  });
+                });
+              });
+            });
+          });
+        });
+      }
+    });
+  });
+});
+// get all trips for a driver
+app.get("/driver/booking-requests/:id", verifyToken, (req, res) => {
+  const driverId = req.params.id;
+
+  const query = `
+    SELECT a.id AS id_booking, a.id_trajet, a.id_passenger, a.status,
+           t.ville_depart, t.ville_arriver, t.date_depart, t.heure_depart, t.prix,
+           u.nom AS passenger_nom, u.prenom AS passenger_prenom, u.email AS passenger_email
+    FROM acceptations a
+    JOIN trajet t ON a.id_trajet = t.id_trajet
+    JOIN utilisateur u ON a.id_passenger = u.id
+    WHERE t.id_driver = ?
+    ORDER BY a.id DESC
+  `;
+
+  db.query(query, [driverId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "Database error", details: err });
+    }
+    res.json(results);
+  });
+});
+// booking
 app.post("/book-trip", verifyToken, (req, res) => {
   const { id_trajet, id_user } = req.body;
 
@@ -256,108 +418,137 @@ app.post("/book-trip", verifyToken, (req, res) => {
       return res.status(500).json({ error: "Database error", details: err });
     }
 
-    const insertReservationQuery = `
-      INSERT INTO bookings (id_trajet, id_passenger) VALUES (?, ?)
-    `;
-    db.query(insertReservationQuery, [id_trajet, id_user], (err, result) => {
-      if (err) {
+    // Fetch the driver_id from the trajet table
+    const getDriverQuery = `SELECT id_driver FROM trajet WHERE id_trajet = ?`;
+    db.query(getDriverQuery, [id_trajet], (err, driverResult) => {
+      if (err || driverResult.length === 0) {
         return db.rollback(() => {
-          if (err.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ error: "You have already booked this trip." });
-          }
-          return res.status(500).json({ error: "Database error", details: err });
+          return res.status(500).json({ error: "Error fetching trip details", details: err });
         });
       }
 
-      const updateNbrPlacesQuery = `
-        UPDATE trajet SET nbr_places = nbr_places - 1 
-        WHERE id_trajet = ? AND nbr_places > 0
+      const driver_id = driverResult[0].id_driver;
+
+      // Insert the booking with status="pending"
+      const insertReservationQuery = `
+        INSERT INTO bookings (id_trajet, id_passenger, status)
+        VALUES (?, ?, 'pending')
       `;
-      db.query(updateNbrPlacesQuery, [id_trajet], (err, updateResult) => {
+      db.query(insertReservationQuery, [id_trajet, id_user], (err, bookingResult) => {
         if (err) {
           return db.rollback(() => {
+            if (err.code === 'ER_DUP_ENTRY') {
+              return res.status(400).json({ error: "You have already booked this trip." });
+            }
             return res.status(500).json({ error: "Database error", details: err });
           });
         }
 
-        if (updateResult.affectedRows === 0) {
-          return db.rollback(() => {
-            return res.status(400).json({ error: "No available seats for this trip." });
-          });
-        }
-
-        // Get passenger email
-        const getEmailQuery = `SELECT email, nom, prenom FROM utilisateur WHERE id = ?`;
-        db.query(getEmailQuery, [id_user], (err, emailResult) => {
-          if (err || emailResult.length === 0) {
+        // Insert into acceptations table with status="pending"
+        const insertAcceptationQuery = `
+          INSERT INTO acceptations (id_trajet, id_passenger)
+          VALUES (?, ?)
+        `;
+        db.query(insertAcceptationQuery, [id_trajet, id_user], (err, acceptationResult) => {
+          if (err) {
             return db.rollback(() => {
-              return res.status(500).json({ error: "Error fetching user email", details: err });
+              if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(400).json({ error: "You have already requested this trip." });
+              }
+              return res.status(500).json({ error: "Error inserting into acceptations table", details: err });
             });
           }
 
-          const { email, nom, prenom } = emailResult[0];
-
-          // Get trip info for email
-          const getTripDetailsQuery = `SELECT * FROM trajet WHERE id_trajet = ?`;
-          db.query(getTripDetailsQuery, [id_trajet], (err, tripResult) => {
-            if (err || tripResult.length === 0) {
+          const updateNbrPlacesQuery = `
+            UPDATE trajet SET nbr_places = nbr_places - 1 
+            WHERE id_trajet = ? AND nbr_places > 0
+          `;
+          db.query(updateNbrPlacesQuery, [id_trajet], (err, updateResult) => {
+            if (err) {
               return db.rollback(() => {
-                return res.status(500).json({ error: "Error fetching trip details", details: err });
+                return res.status(500).json({ error: "Database error", details: err });
               });
             }
 
-            const trip = tripResult[0];
+            if (updateResult.affectedRows === 0) {
+              return db.rollback(() => {
+                return res.status(400).json({ error: "No available seats for this trip." });
+              });
+            }
 
-            // Nodemailer configuration
-            const transporter = nodemailer.createTransport({
-             
-              host: 'covoiturage.zelobrix.com',
-              port: 465,
-              secure: true,
-              auth: {
-                user: 'admin@covoiturage.zelobrix.com',         // replace with your email
-                pass: '0V=3=yku0ol*'  // use app password if 2FA
-              },
-              tls: {
-                rejectUnauthorized: false
-              }
-            });
-
-            const mailOptions = {
-              from: 'admin@covoiturage.zelobrix.com',
-              to: email,
-              subject: 'Booking Confirmation - Covoiturage App',
-              html: `
-                <h3>Bonjour ${prenom} ${nom},</h3>
-                <p>Votre réservation a été effectuée avec succès !</p>
-                <h4>Détails du trajet :</h4>
-                <ul>
-                  <li><strong>Départ:</strong> ${trip.ville_depart}</li>
-                  <li><strong>Arrivée:</strong> ${trip.ville_arriver}</li>
-                  <li><strong>Date:</strong> ${trip.date_depart}</li>
-                  <li><strong>Heure:</strong> ${trip.heure_depart}</li>
-                  <li><strong>Prix:</strong> ${trip.prix} DH</li>
-                </ul>
-                <p>Merci d'avoir utilisé notre plateforme !</p>
-              `
-            };
-
-            transporter.sendMail(mailOptions, (err, info) => {
-              if (err) {
-                console.error("Email sending failed:", err);
-                // You may choose to still commit even if email fails
+            // Get passenger email
+            const getEmailQuery = `SELECT email, nom, prenom FROM utilisateur WHERE id = ?`;
+            db.query(getEmailQuery, [id_user], (err, emailResult) => {
+              if (err || emailResult.length === 0) {
+                return db.rollback(() => {
+                  return res.status(500).json({ error: "Error fetching user email", details: err });
+                });
               }
 
-              db.commit((err) => {
-                if (err) {
+              const { email, nom, prenom } = emailResult[0];
+
+              // Get trip info for email
+              const getTripDetailsQuery = `SELECT * FROM trajet WHERE id_trajet = ?`;
+              db.query(getTripDetailsQuery, [id_trajet], (err, tripResult) => {
+                if (err || tripResult.length === 0) {
                   return db.rollback(() => {
-                    return res.status(500).json({ error: "Database commit error", details: err });
+                    return res.status(500).json({ error: "Error fetching trip details", details: err });
                   });
                 }
 
-                res.status(201).json({
-                  message: "Trip booked successfully",
-                  reservationId: result.insertId
+                const trip = tripResult[0];
+
+                // Nodemailer configuration
+                const transporter = nodemailer.createTransport({
+                  host: 'covoiturage.zelobrix.com',
+                  port: 465,
+                  secure: true,
+                  auth: {
+                    user: 'admin@covoiturage.zelobrix.com',
+                    pass: '0V=3=yku0ol*'
+                  },
+                  tls: {
+                    rejectUnauthorized: false
+                  }
+                });
+
+                const mailOptions = {
+                  from: 'admin@covoiturage.zelobrix.com',
+                  to: email,
+                  subject: 'Booking Request Pending - Covoiturage App',
+                  html: `
+                    <h3>Bonjour ${prenom} ${nom},</h3>
+                    <p>Votre demande de réservation a été soumise et est en attente d'approbation par le conducteur.</p>
+                    <h4>Détails du trajet :</h4>
+                    <ul>
+                      <li><strong>Départ:</strong> ${trip.ville_depart}</li>
+                      <li><strong>Arrivée:</strong> ${trip.ville_arriver}</li>
+                      <li><strong>Date:</strong> ${trip.date_depart}</li>
+                      <li><strong>Heure:</strong> ${trip.heure_depart}</li>
+                      <li><strong>Prix:</strong> ${trip.prix} DH</li>
+                    </ul>
+                    <p>Vous serez notifié une fois que le conducteur aura répondu à votre demande.</p>
+                    <p>Merci d'avoir utilisé notre plateforme !</p>
+                  `
+                };
+
+                transporter.sendMail(mailOptions, (err, info) => {
+                  if (err) {
+                    console.error("Email sending failed:", err);
+                  }
+
+                  db.commit((err) => {
+                    if (err) {
+                      return db.rollback(() => {
+                        return res.status(500).json({ error: "Database commit error", details: err });
+                      });
+                    }
+
+                    res.status(201).json({
+                      message: "Booking request submitted successfully. Awaiting driver approval.",
+                      reservationId: bookingResult.insertId
+                    });
+                  });
                 });
               });
             });
@@ -368,7 +559,129 @@ app.post("/book-trip", verifyToken, (req, res) => {
   });
 });
 
+// app.post("/book-trip", verifyToken, (req, res) => {
+//   const { id_trajet, id_user } = req.body;
+
+//   db.beginTransaction((err) => {
+//     if (err) {
+//       return res.status(500).json({ error: "Database error", details: err });
+//     }
+
+//     const insertReservationQuery = `
+//       INSERT INTO bookings (id_trajet, id_passenger) VALUES (?, ?)
+//     `;
+//     db.query(insertReservationQuery, [id_trajet, id_user], (err, result) => {
+//       if (err) {
+//         return db.rollback(() => {
+//           if (err.code === 'ER_DUP_ENTRY') {
+//             return res.status(400).json({ error: "You have already booked this trip." });
+//           }
+//           return res.status(500).json({ error: "Database error", details: err });
+//         });
+//       }
+
+//       const updateNbrPlacesQuery = `
+//         UPDATE trajet SET nbr_places = nbr_places - 1 
+//         WHERE id_trajet = ? AND nbr_places > 0
+//       `;
+//       db.query(updateNbrPlacesQuery, [id_trajet], (err, updateResult) => {
+//         if (err) {
+//           return db.rollback(() => {
+//             return res.status(500).json({ error: "Database error", details: err });
+//           });
+//         }
+
+//         if (updateResult.affectedRows === 0) {
+//           return db.rollback(() => {
+//             return res.status(400).json({ error: "No available seats for this trip." });
+//           });
+//         }
+
+//         // Get passenger email
+//         const getEmailQuery = `SELECT email, nom, prenom FROM utilisateur WHERE id = ?`;
+//         db.query(getEmailQuery, [id_user], (err, emailResult) => {
+//           if (err || emailResult.length === 0) {
+//             return db.rollback(() => {
+//               return res.status(500).json({ error: "Error fetching user email", details: err });
+//             });
+//           }
+
+//           const { email, nom, prenom } = emailResult[0];
+
+//           // Get trip info for email
+//           const getTripDetailsQuery = `SELECT * FROM trajet WHERE id_trajet = ?`;
+//           db.query(getTripDetailsQuery, [id_trajet], (err, tripResult) => {
+//             if (err || tripResult.length === 0) {
+//               return db.rollback(() => {
+//                 return res.status(500).json({ error: "Error fetching trip details", details: err });
+//               });
+//             }
+
+//             const trip = tripResult[0];
+
+//             // Nodemailer configuration
+//             const transporter = nodemailer.createTransport({
+             
+//               host: 'covoiturage.zelobrix.com',
+//               port: 465,
+//               secure: true,
+//               auth: {
+//                 user: 'admin@covoiturage.zelobrix.com',         // replace with your email
+//                 pass: '0V=3=yku0ol*'  // use app password if 2FA
+//               },
+//               tls: {
+//                 rejectUnauthorized: false
+//               }
+//             });
+
+//             const mailOptions = {
+//               from: 'admin@covoiturage.zelobrix.com',
+//               to: email,
+//               subject: 'Booking Confirmation - Covoiturage App',
+//               html: `
+//                 <h3>Bonjour ${prenom} ${nom},</h3>
+//                 <p>Votre réservation a été effectuée avec succès !</p>
+//                 <h4>Détails du trajet :</h4>
+//                 <ul>
+//                   <li><strong>Départ:</strong> ${trip.ville_depart}</li>
+//                   <li><strong>Arrivée:</strong> ${trip.ville_arriver}</li>
+//                   <li><strong>Date:</strong> ${trip.date_depart}</li>
+//                   <li><strong>Heure:</strong> ${trip.heure_depart}</li>
+//                   <li><strong>Prix:</strong> ${trip.prix} DH</li>
+//                 </ul>
+//                 <p>Merci d'avoir utilisé notre plateforme !</p>
+//               `
+//             };
+
+//             transporter.sendMail(mailOptions, (err, info) => {
+//               if (err) {
+//                 console.error("Email sending failed:", err);
+//                 // You may choose to still commit even if email fails
+//               }
+
+//               db.commit((err) => {
+//                 if (err) {
+//                   return db.rollback(() => {
+//                     return res.status(500).json({ error: "Database commit error", details: err });
+//                   });
+//                 }
+
+//                 res.status(201).json({
+//                   message: "Trip booked successfully",
+//                   reservationId: result.insertId
+//                 });
+//               });
+//             });
+//           });
+//         });
+//       });
+//     });
+//   });
+// });
+
 //----------------------------------------------------- get trips by passenger ID -------------------------------------
+
+
 app.get("/passenger-trips/:id", verifyToken, (req, res) => {
   const userId = req.params.id;
   const sql = `
