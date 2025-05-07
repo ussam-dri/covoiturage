@@ -870,7 +870,7 @@ app.post('/forgot-password', (req, res) => {
     db.query(updateUserQuery, [resetToken, expires, email], (err) => {
       if (err) return res.status(500).json({ message: 'Error saving reset token', error: err });
 
-      const resetLink = `http://backend-codrive.zelobrix.com/reset-password/${resetToken}`;
+      const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
 
       const mailOptions = {
         from: '"CoDrive" <admin@covoiturage.zelobrix.com>',

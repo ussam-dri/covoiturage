@@ -6,7 +6,7 @@ export default function ChangePassword({ userId }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = await fetch('http://backend-codrive.zelobrix.com/change-password', {
+    const res = await fetch('http://localhost:5090/change-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ Newpassword: newPassword, id: userId })
