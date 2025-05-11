@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
 import Footer from './Footer';
 import { useSelector } from "react-redux";
-import {User,ShieldCheck} from 'lucide-react';
+import { User, ShieldCheck } from 'lucide-react';
+
 function ViewTrip() {
   const { user } = useSelector((state) => state.auth);
   const { id } = useParams();
@@ -80,7 +81,7 @@ function ViewTrip() {
               <h2 className="text-2xl font-bold text-white">Trip Details</h2>
               <p className="text-blue-100 mt-1">View information about this trip</p>
             </div>
-            <div className="bg-white shadow  overflow-hidden mb-8">
+            <div className="bg-white shadow overflow-hidden mb-8">
               <div className="bg-gradient-to-r from-blue-200 to-purple-300 p-6 text-black">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <div className="flex items-center mb-4 md:mb-0">
@@ -95,18 +96,14 @@ function ViewTrip() {
                       </p>
                     </div>
                   </div>
-               
                 </div>
               </div>
-                  
-                  
-</div>
+            </div>
 
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="border-b pb-4 md:border-b-0 md:pb-0 md:border-r md:pr-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Route Information</h3>
-                  
                   <div className="space-y-4">
                     <div className="flex items-start">
                       <div className="flex-shrink-0 mt-1">
@@ -122,7 +119,6 @@ function ViewTrip() {
                         <p className="text-lg font-medium text-gray-900">{trip.ville_depart}</p>
                       </div>
                     </div>
-                    
                     <div className="flex items-start">
                       <div className="flex-shrink-0 mt-1">
                         <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
@@ -137,10 +133,9 @@ function ViewTrip() {
                         <p className="text-lg font-medium text-gray-900">{trip.ville_arriver}</p>
                       </div>
                     </div>
-                    
                     <div className="flex items-start">
                       <div className="flex-shrink-0 mt-1">
-                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                        <div className="h-hiba w-8 rounded-full bg-blue-100 flex items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
@@ -151,11 +146,10 @@ function ViewTrip() {
                         <p className="text-lg font-medium text-gray-900">{new Date(trip.date_depart).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    
                     <div className="flex items-start">
                       <div className="flex-shrink-0 mt-1">
                         <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg xmlns="http://www W3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
@@ -171,7 +165,6 @@ function ViewTrip() {
                 <div>
                   <div className="mb-6">
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Trip Details</h3>
-                    
                     <div className="space-y-4">
                       <div className="flex items-start">
                         <div className="flex-shrink-0 mt-1">
@@ -186,7 +179,6 @@ function ViewTrip() {
                           <p className="text-lg font-medium text-gray-900">{trip.prix} €</p>
                         </div>
                       </div>
-                      
                       <div className="flex items-start">
                         <div className="flex-shrink-0 mt-1">
                           <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
@@ -199,44 +191,67 @@ function ViewTrip() {
                           <p className="text-sm text-gray-500">Available Seats</p>
                           <p className="text-lg font-medium text-gray-900">{trip.nbr_places}</p>
                         </div>
-                        
+                      </div>
+                      {/* Added Car Brand */}
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0 mt-1">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <p className="text-sm text-gray-500">Car Brand</p>
+                          <p className="text-lg font-medium text-gray-900">{trip.marque || 'N/A'}</p>
+                        </div>
+                      </div>
+                      {/* Added License Plate */}
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0 mt-1">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <p className="text-sm text-gray-500">License Plate</p>
+                          <p className="text-lg font-medium text-gray-900">{trip.matricule || 'N/A'}</p>
+                        </div>
                       </div>
                       <div className="mt-6">
                         <h3 className="text-lg font-medium text-gray-900 mb-4">Trip Status</h3>
                         <div className="flex items-center space-x-2">
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                             trip.status === 0
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : trip.status === 1
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-green-100 text-green-800'
-                            }`}>
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : trip.status === 1
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}>
                             {trip.status === 0
-                                ? 'Upcoming'
-                                : trip.status === 1
-                                ? 'Ongoing'
-                                : 'Completed'}
-                            </span>
+                              ? 'Upcoming'
+                              : trip.status === 1
+                              ? 'Ongoing'
+                              : 'Completed'}
+                          </span>
                         </div>
-                        </div>
-
+                      </div>
                     </div>
                   </div>
                   
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Trip Preferences</h3>
-                    
                     <div className="grid grid-cols-1 gap-3">
                       <div className={`flex items-center rounded-md p-3 ${trip.fumer ? 'bg-blue-50' : 'bg-gray-50'}`}>
                         <div className={`h-4 w-4 rounded-full ${trip.fumer ? 'bg-blue-500' : 'bg-gray-300'} mr-3`}></div>
                         <span className="text-gray-700">Smoking: {trip.fumer ? 'Allowed' : 'Not allowed'}</span>
                       </div>
-                      
                       <div className={`flex items-center rounded-md p-3 ${trip.animaux ? 'bg-blue-50' : 'bg-gray-50'}`}>
                         <div className={`h-4 w-4 rounded-full ${trip.animaux ? 'bg-blue-500' : 'bg-gray-300'} mr-3`}></div>
                         <span className="text-gray-700">Pets: {trip.animaux ? 'Allowed' : 'Not allowed'}</span>
                       </div>
-                      
                       <div className={`flex items-center rounded-md p-3 ${trip.musique ? 'bg-blue-50' : 'bg-gray-50'}`}>
                         <div className={`h-4 w-4 rounded-full ${trip.musique ? 'bg-blue-500' : 'bg-gray-300'} mr-3`}></div>
                         <span className="text-gray-700">Music: {trip.musique ? 'Allowed' : 'Not allowed'}</span>

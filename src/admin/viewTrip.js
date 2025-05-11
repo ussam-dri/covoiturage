@@ -100,6 +100,14 @@ function ViewTrip() {
             <p className="text-gray-800 font-medium">{trip.heure_arrivee || 'N/A'}</p>
           </div>
           <div>
+          <h3 className="text-gray-500 font-medium">Car Brand</h3>
+          <p className="text-gray-800 font-medium">{trip.marque || 'N/A'}</p>
+        </div>
+        <div>
+        <h3 className="text-gray-500 font-medium">License Plate</h3>
+        <p className="text-gray-800 font-medium">{trip.matricule || 'N/A'}</p>
+      </div>
+          <div>
             <h3 className="text-gray-500 font-medium">Price</h3>
             <p className="text-gray-800 font-medium">${trip.prix}</p>
           </div>
